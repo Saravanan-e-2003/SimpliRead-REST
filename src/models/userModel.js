@@ -7,11 +7,11 @@ const userSchema = new mongoose.Schema({
     unique: true,
   },
 
-  name: {
+  password: {
     type: String,
-    default: "Guest",
+    required: true,
   },
-
+  
   email: {
     type: String,
     default: null,
