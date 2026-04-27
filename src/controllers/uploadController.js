@@ -1,10 +1,7 @@
 import { uploadToBlob } from "../services/blobService.js";
 import { deleteFile } from "../utils/cleanup.js";
-import { generateHash } from "../utils/bookHash.js"
+import { generateHash } from "../utils/bookHash.js";
 import Book from "../models/bookModel.js";
-import { extractPage } from "../services/pdfService.js";
-
-
 
 export async function handleUpload(req, res) {
   try {
@@ -15,7 +12,10 @@ export async function handleUpload(req, res) {
       return res.status(400).send("Only PDF allowed");
     }
 
+    //  hash first
     const bookId = await generateHash(file.path);
+
+    // check existing
     let existingBook = await Book.findOne({ bookId });
 
     if (existingBook) {
@@ -26,36 +26,28 @@ export async function handleUpload(req, res) {
         book: existingBook,
       });
     }
-    
-    const blobName = bookId+".pdf";
 
-    //storing it in azure blob
-    const fileUrl = await uploadToBlob(
+    // upload + SAS
+    const { url, blobName } = await uploadToBlob(
       file.path,
-      blobName
+      file.originalname,
+      bookId
     );
 
-    //storing the hash and the book url in db
+    //  store in DB
     const newBook = await Book.create({
       bookId,
       userId,
-      fileUrl,
+      fileUrl: url,      //  store SAS URL
+      blobName,          //  important for future SAS regen
       title: file.originalname,
     });
-
-    const { totalPages, pages } = await extractPages(file.path);
-    await savePages(bookId, pages);
-
-    await Book.updateOne(
-      { bookId },
-      { totalPages }
-    );
 
     deleteFile(file.path);
 
     res.json({
       message: "Upload success",
-      fileUrl,
+      book: newBook,
     });
 
   } catch (err) {

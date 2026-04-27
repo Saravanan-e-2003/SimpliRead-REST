@@ -7,7 +7,7 @@ export async function getPageText(book) {
 
   let localPath;
 
-  // check cache
+  // check cache 
   if (isCached(bookId)) {
     localPath = getPath(bookId);
   } else {

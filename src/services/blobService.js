@@ -1,17 +1,44 @@
-import { blobServiceClient } from "../config/azure.js";
+import {
+  BlobServiceClient,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions
+} from "@azure/storage-blob";
 
-const containerName = "simplireadblobcontainer-1";
+import fs from "fs";
 
-export async function uploadToBlob(filePath, fileName) {
-  const containerClient =
-    blobServiceClient.getContainerClient(containerName);
+// use connection string directly
+const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+const containerName = process.env.AZURE_CONTAINER_NAME;
 
-  const blobName = fileName;
+// client
+const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+const containerClient = blobServiceClient.getContainerClient(containerName);
 
-  const blockBlobClient =
-    containerClient.getBlockBlobClient(blobName);
 
+// upload + SAS
+export async function uploadToBlob(filePath, fileName, bookId) {
+  const blobName = `${bookId}.pdf`;
+
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+  // upload
   await blockBlobClient.uploadFile(filePath);
 
-  return blockBlobClient.url;
+  //  SAS generation (this still needs credential internally)
+  const sasToken = generateBlobSASQueryParameters(
+    {
+      containerName,
+      blobName,
+      permissions: BlobSASPermissions.parse("r"),
+      expiresOn: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+    blobServiceClient.credential // works with connection string
+  ).toString();
+
+  const sasUrl = `${blockBlobClient.url}?${sasToken}`;
+
+  return {
+    url: sasUrl,
+    blobName,
+  };
 }
