@@ -3,6 +3,7 @@
     "@azure/storage-blob": "^12.31.0",
     "@google/genai": "^1.50.1",
     "@google/generative-ai": "^0.24.1",
+    "@openrouter/sdk": "^0.12.25",
     "axios": "^1.14.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

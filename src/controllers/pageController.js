@@ -9,7 +9,7 @@ export async function getPage(req, res) {
     const {
       bookId,
       page,
-      model = "gemini",
+      model = "mistral",
       promptVersion = "v1",
     } = req.query;
 
